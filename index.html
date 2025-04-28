@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Магазин</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f7f9fc;
+    }
+    .card, .checkout {
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .btn {
+      border-radius: 12px;
+    }
+    .checkout {
+      background: #eef3f7;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container my-4">
+    <h2 class="text-center mb-4">Магазин</h2>
+
+    <ul class="nav nav-tabs" id="tabMenu" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="sale-tab" data-bs-toggle="tab" data-bs-target="#sale" type="button" role="tab">Продаж товару</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab">Додати товар</button>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+      <!-- Продаж товару -->
+      <div class="tab-pane fade show active" id="sale" role="tabpanel">
+        <div class="row">
+          <div class="col-md-8">
+            <input type="text" id="search" class="form-control mb-3" placeholder="Пошук товару...">
+
+            <div class="card p-3">
+              <h5>Каталог товарів</h5>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Код</th>
+                    <th>Назва</th>
+                    <th>Ціна</th>
+                    <th>Залишок</th>
+                    <th>Дія</th>
+                  </tr>
+                </thead>
+                <tbody id="product-list">
+                  <!-- Тут товари -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="checkout">
+              <h5>Чек</h5>
+              <ul id="cart-list" class="list-group mb-3"></ul>
+              <p><strong>Сума разом:</strong> <span id="total">0.00 ₴</span></p>
+
+              <select id="payment-method" class="form-select mb-2">
+                <option value="cash">Готівка</option>
+                <option value="card">Картка</option>
+              </select>
+
+              <input type="number" id="cash-received" class="form-control mb-2" placeholder="Отримано готівки (₴)">
+              
+              <button class="btn btn-primary w-100" onclick="checkout()">Оплатити</button>
+              <button class="btn btn-danger w-100 mt-2" onclick="clearCart()">Очистити кошик</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Додати товар -->
+      <div class="tab-pane fade" id="add" role="tabpanel">
+        <div class="card p-4">
+          <h5>Додати новий товар</h5>
+          <div class="mb-3">
+            <input type="text" id="new-code" class="form-control mb-2" placeholder="Код товару">
+            <input type="text" id="new-name" class="form-control mb-2" placeholder="Назва товару">
+            <input type="number" id="new-price" class="form-control mb-2" placeholder="Ціна (₴)">
+            <input type="number" id="new-stock" class="form-control mb-2" placeholder="Кількість">
+            <button class="btn btn-success w-100" onclick="addProduct()">Додати товар</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const products = [
+  { code: '001', name: 'Молоко', price: 45.00, stock: 20 }
+];
+
+let cart = {};
+
+function renderProducts() {
+  const list = document.getElementById('product-list');
+  const searchTerm = document.getElementById('search').value.toLowerCase();
+  list.innerHTML = '';
+  products.forEach(product => {
+    if (product.name.toLowerCase().includes(searchTerm) || product.code.includes(searchTerm)) {
+      list.innerHTML += `
+        <tr>
+          <td>${product.code}</td>
+          <td>${product.name}</td>
+          <td>${product.price.toFixed(2)} ₴</td>
+          <td>${product.stock}</td>
+          <td><button class="btn btn-success btn-sm" onclick="addToCart('${product.code}')">Додати</button></td>
+        </tr>
+      `;
+    }
+  });
+}
+
+function addToCart(code) {
+  const product = products.find(p => p.code === code);
+  if (product && product.stock > 0) {
+    cart[code] = (cart[code] || 0) + 1;
+    product.stock--;
+    renderProducts();
+    renderCart();
+  } else {
+    alert('Товар закінчився!');
+  }
+}
+
+function renderCart() {
+  const cartList = document.getElementById('cart-list');
+  cartList.innerHTML = '';
+  let total = 0;
+  for (const code in cart) {
+    const product = products.find(p => p.code === code);
+    const quantity = cart[code];
+    const subtotal = product.price * quantity;
+    total += subtotal;
+    cartList.innerHTML += `<li class="list-group-item">${product.name} x${quantity} = ${subtotal.toFixed(2)} ₴</li>`;
+  }
+  document.getElementById('total').textContent = total.toFixed(2) + ' ₴';
+}
+
+function checkout() {
+  const paymentMethod = document.getElementById('payment-method').value;
+  const cashReceived = parseFloat(document.getElementById('cash-received').value) || 0;
+  const total = parseFloat(document.getElementById('total').textContent);
+
+  if (paymentMethod === 'cash') {
+    if (cashReceived >= total) {
+      const change = cashReceived - total;
+      alert(`Оплата прийнята. Решта: ${change.toFixed(2)} ₴`);
+      cart = {};
+      renderProducts();
+      renderCart();
+    } else {
+      alert('Недостатньо грошей для оплати.');
+    }
+  } else {
+    alert('Оплата карткою успішна.');
+    cart = {};
+    renderProducts();
+    renderCart();
+  }
+}
+
+function clearCart() {
+  for (const code in cart) {
+    const product = products.find(p => p.code === code);
+    if (product) {
+      product.stock += cart[code];
+    }
+  }
+  cart = {};
+  renderProducts();
+  renderCart();
+}
+
+function addProduct() {
+  const code = document.getElementById('new-code').value.trim();
+  const name = document.getElementById('new-name').value.trim();
+  const price = parseFloat(document.getElementById('new-price').value);
+  const stock = parseInt(document.getElementById('new-stock').value);
+
+  if (!code || !name || isNaN(price) || isNaN(stock)) {
+    alert('Заповніть всі поля правильно!');
+    return;
+  }
+
+  if (products.find(p => p.code === code)) {
+    alert('Товар із таким кодом вже існує!');
+    return;
+  }
+
+  products.push({ code, name, price, stock });
+  document.getElementById('new-code').value = '';
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-price').value = '';
+  document.getElementById('new-stock').value = '';
+  alert('Товар додано успішно!');
+  renderProducts();
+}
+
+document.getElementById('search').addEventListener('input', renderProducts);
+
+renderProducts();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
